@@ -15,14 +15,17 @@ formatting: str = '%.2f'
 unit_label: str = '单价'
 no_quote: str = '无法报价'
 excel_filename: str = 'bay.xlsx'
-contract: str = 'QB-BN18034'
+contract: str = 'BN-2018-020'
 
 df: pd.DataFrame = pd.read_excel(excel_filename, sheet_name='quote', na_values=no_quote, index_col=0)
 
 vendors_raw: pd.Series = pd.read_excel(excel_filename, sheet_name='vendor', header=None, index_col=0, squeeze=True)
 vendors_name = vendors_raw.index
 vendors = list(filter(lambda v: v in df, vendors_raw.index))
-vendors_timeout = list(filter(lambda v: v not in df.columns, vendors_raw.index))
+vendors_timeout: list = list(filter(lambda v: v not in df.columns, vendors_raw.index))
+vendor_invalid = list(filter(lambda v: v not in vendors_raw.index, df.columns[8:]))
+if vendor_invalid:
+    raise ValueError("Invalid vendor name found! " + str(vendor_invalid))
 
 quotes = df.loc[:, vendors]
 
@@ -61,7 +64,7 @@ for vendor_name, vendor_df in groups:
     print('总价', total)
     print(vendor_product.to_csv(sep='\t', float_format=formatting))
 
-    numbers = ','.join(map(str, vendor_product['编号'].unique()))
+    numbers = ','.join(map(str, vendor_product['采购依据'].unique()))
     print(numbers)
 
     vendor_quotes = vendor_df.loc[:, vendors]
@@ -119,7 +122,7 @@ for vendor_name, vendor_df in groups:
     ws['H7'] = vendor_df[quote_label].sum()
     ws['D8'] = "%s（￥%s）（含16%%增值税）" % (num2chn(vendor_df[quote_label].sum()), total)
 
-    columns = ['名称', '规格', '规范', '数量', '单位', '单价', '总价', '交货周期', '编号', '申请部门', '项目']
+    columns = ['名称', '规格', '规范', '数量', '单位', '单价', '总价', '交货周期', '采购依据', '申请部门', '项目']
     excel_vendor_detail = vendor_product.reindex(columns=columns, fill_value='')
     for r in dataframe_to_rows(excel_vendor_detail, index=True, header=False):
         ws.append(r)
