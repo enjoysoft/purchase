@@ -64,8 +64,11 @@ for vendor_name, vendor_df in groups:
     print('总价', total)
     print(vendor_product.to_csv(sep='\t', float_format=formatting))
 
-    numbers = ','.join(map(str, vendor_product['采购依据'].unique()))
+    numbers = ','.join(sorted(map(str, vendor_product['采购依据'].unique())))
     print(numbers)
+
+    items = ','.join(sorted(vendor_product['项目'].unique()))
+    print(items)
 
     vendor_quotes = vendor_df.loc[:, vendors]
 
@@ -99,6 +102,7 @@ for vendor_name, vendor_df in groups:
     doc = DocxTemplate("template.docx")
 
     context = {'numbers': numbers,
+               'items': items,
                'vendor': vendor_full_name,
                'detail': docxtpl.R(detail_str),
                'total': total,
