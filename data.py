@@ -17,9 +17,14 @@ no_quote: str = '无法报价'
 excel_filename: str = 'bay.xlsx'
 contract: str = '???'
 
-seed_order: int = 4
-seed_contract: int = 1
+seed_order: int = 56
+seed_contract: int = 12
 pattern = {'BN': 'BN-2019-', 'C919': 'C919B-BN19', 'ARJ': 'ARJ21B-BN19', 'PB': 'PB-BN19', 'QB': 'QB-BN19'}
+
+today: str = '2019年3月27日'
+order: str = '0315-0326美标件'
+start_day: str = '2019年3月15日'
+end_day: str = '2019年3月26日'
 
 
 def get_contract(cat: str):
@@ -111,7 +116,9 @@ for vendor_name, vendor_df in groups:
     total_real = vendor_product[quote_label].sum()
 
     total_short: str = ('$' if is_dollar(vendor_name) else '￥') + formatting % total_real
-    total: str = ('美元' if is_dollar(vendor_name) else '人民币') + formatting % total_real
+    currency: str = ('美元' if is_dollar(vendor_name) else '人民币')
+    total: str = currency + formatting % total_real
+
     print('总价', total)
     print(vendor_product.to_csv(sep='\t', float_format=formatting))
 
@@ -158,7 +165,11 @@ for vendor_name, vendor_df in groups:
                'vendor_all': vendor_all,
                'vendor_count': vendor_count,
                'vendor_detail': vendor_detail_str,
-               'contract': contract
+               'contract': contract,
+               'currency': currency,
+               'order': order,
+               'start_day': start_day,
+               'end_day': end_day,
                }
     doc.render(context)
     doc.save(vendor_name + ".docx")
@@ -175,17 +186,17 @@ for vendor_name, vendor_df in groups:
         ws['J7'] = vendor_full_name
         ws['J4'] = numbers
         ws['J3'] = contract
-        ws['I12'] = total
+        ws['I12'] = total_short
         ws['D13'] = num2words(total_real).upper()
     else:
         ws = book.copy_worksheet(book['template'])
         ws.title = sheet_name
-        ws['I4'] = vendor_full_name
+        ws['J4'] = vendor_full_name
         ws['K3'] = numbers
         ws['k2'] = contract
-        ws['H7'] = total
+        ws['I7'] = total_short
         ws['D8'] = "%s（￥%s）（含16%%增值税）" % (num2chn(total_real), total)
-    columns = ['名称', '规格', '规范', '数量', '单位', '品牌', '单价', '总价', '交货周期', '采购依据', '申请部门', '项目', 'MOQ']
+    columns = ['产品名称', '型号规格', '规范', '数量', '单位', '品牌', '单价', '总价', '交货周期', '采购依据', '申请部门', '项目', 'MOQ']
     excel_vendor_detail = vendor_product.reindex(columns=columns, fill_value='?')
     for r in dataframe_to_rows(excel_vendor_detail, index=True, header=False):
         ws.append(r)

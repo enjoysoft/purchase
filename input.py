@@ -4,11 +4,27 @@ import numpy as np
 import glob
 from openpyxl import load_workbook
 
-sample: str = '1229-0108美标件'
+sample: str = '0315-0326美标件'
 no_quote: str = '无法报价'
 index_label: str = '序号'
 
 signal: str = '合计'
+
+
+def is_dollar(vendor: str):
+    return vendor.encode('UTF-8').isalnum() or vendor == "玥涵"
+
+
+def is_hk(vendor: str):
+    return vendor == 'JOHNSON'
+
+
+def dollar_to_rmb(dollar: float):
+    return dollar * 6.9 * 1.16 * 1.1 + 200
+
+
+def dollar_to_hk(dollar: float):
+    return dollar * 6.9 * 1.16 * 1.1 + 100
 
 
 def last_row(ws):
@@ -22,10 +38,6 @@ def get_sub(a_dir):
             if os.path.isdir(os.path.join(a_dir, name))]
 
 
-def is_dollars(vendor: str):
-    return vendor.encode('UTF-8').isalpha()
-
-
 def get_xls_file(a_dir):
     return glob.glob(sample + "\\" + a_dir + "\\*.xls*")[0]
 
@@ -36,7 +48,7 @@ individual_header = ['品牌', '单价', '总价', '交货周期', 'MOQ']
 assert len(shared_header) + len(individual_header) == len(header) - 1
 
 
-def get_price(file: str):
+def get_price(file: str, vendor: str):
     wb = load_workbook(filename=file, data_only=True)
     ws = wb['Sheet1']
     row = last_row(ws)
@@ -53,7 +65,7 @@ def get_price(file: str):
     # Transform into data frame
     df = pd.DataFrame(data_rows, columns=header)
     df.set_index(index_label, inplace=True)
-    df.replace({no_quote: np.nan, 0: np.nan, "": np.nan}, inplace=True)
+    df.replace({no_quote: np.nan, 0: np.nan, "": np.nan, None: np.nan, " ": np.nan, "N/A": np.nan}, inplace=True)
     return df
 
 
@@ -65,8 +77,37 @@ all = pd.concat(dfs, keys=vendors)
 hehe = all.unstack(level=0)
 # TODO validation
 res = hehe.xs(vendors[0], level=1, axis=1)[shared_header]
-res1 = hehe['总价']
-res2 = pd.concat([res, res1], axis=1)
-res2.to_excel("quotes.xlsx")
+
 res3 = hehe[individual_header]
 res3.to_excel("individual.xlsx")
+
+res1 = hehe['总价']
+dollar_vendors = list(filter(is_dollar, vendors))
+
+for vendor in vendors:
+    if is_hk(vendor):
+        res[vendor + '美元'] = res1[vendor]
+        res1[vendor] = res1[vendor].apply(dollar_to_hk)
+    elif is_dollar(vendor):
+        res[vendor + '美元'] = res1[vendor]
+        res1[vendor] = res1[vendor].apply(dollar_to_rmb)
+
+mean = res1.mean(1)
+mean.name = '平均'
+std = res1.std(1)
+std.name = '标准差'
+count = res1.count(1)
+count.name = '报价数'
+
+selection = res1.idxmin(1)
+selection.name = '供应商'
+selection_quotes = res1.min(1)
+selection_quotes.name = '报价'
+res1 = res1.join(selection)
+res1 = res1.join(selection_quotes)
+res1 = res1.join(mean)
+res1 = res1.join(std)
+res1 = res1.join(count)
+
+res2 = pd.concat([res, res1], axis=1)
+res2.to_excel("quotes.xlsx")

@@ -11,7 +11,7 @@ def last_row(wb, vendor: str):
             return cell.row - 1
 
 
-filename = "bay 2.xlsx"
+filename = "bay.xlsx"
 
 wb = openpyxl.load_workbook(filename)
 vendors = [name.split(' ')[1] for name in wb.sheetnames if name.split(' ')[0] == '订单']
