@@ -4,7 +4,7 @@ import numpy as np
 import glob
 from openpyxl import load_workbook
 
-sample: str = '0315-0326美标件'
+sample: str = '0410-0416美标件紧急'
 no_quote: str = '无法报价'
 index_label: str = '序号'
 
@@ -39,7 +39,7 @@ def get_sub(a_dir):
 
 
 def get_xls_file(a_dir):
-    return glob.glob(sample + "\\" + a_dir + "\\*.xls*")[0]
+    return glob.glob(sample + "\\" + a_dir + "\\*.xlsx")[0]
 
 
 header = ['序号', '产品名称', '型号规格', '规范', '单位', '数量', '品牌', '单价', '总价', '交货周期', '采购依据', '申请部门', '项目', 'MOQ']
@@ -99,7 +99,7 @@ std.name = '标准差'
 count = res1.count(1)
 count.name = '报价数'
 
-selection = res1.idxmin(1)
+selection = res1.idxmin(1, skipna=True)
 selection.name = '供应商'
 selection_quotes = res1.min(1)
 selection_quotes.name = '报价'

@@ -17,14 +17,14 @@ no_quote: str = '无法报价'
 excel_filename: str = 'bay.xlsx'
 contract: str = '???'
 
-seed_order: int = 56
-seed_contract: int = 12
+seed_order: int = 78
+seed_contract: int = 27
 pattern = {'BN': 'BN-2019-', 'C919': 'C919B-BN19', 'ARJ': 'ARJ21B-BN19', 'PB': 'PB-BN19', 'QB': 'QB-BN19'}
 
-today: str = '2019年3月27日'
-order: str = '0315-0326美标件'
-start_day: str = '2019年3月15日'
-end_day: str = '2019年3月26日'
+today: str = '2019年4月18日'
+order: str = '0410-0416美标件紧急'
+start_day: str = '2019年4月10日'
+end_day: str = '2019年4月16日'
 
 
 def get_contract(cat: str):
