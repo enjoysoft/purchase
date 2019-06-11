@@ -4,7 +4,7 @@ import numpy as np
 import glob
 from openpyxl import load_workbook
 
-sample: str = '0410-0416美标件紧急'
+sample: str = '0603-0611美标件'
 no_quote: str = '无法报价'
 index_label: str = '序号'
 
