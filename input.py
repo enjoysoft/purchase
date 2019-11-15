@@ -4,7 +4,8 @@ import numpy as np
 import glob
 from openpyxl import load_workbook
 
-sample: str = '0603-0611美标件'
+base: str = 'data'
+sample: str = '1101-1108美标件'
 no_quote: str = '无法报价'
 index_label: str = '序号'
 
@@ -12,7 +13,7 @@ signal: str = '合计'
 
 
 def is_dollar(vendor: str):
-    return vendor.encode('UTF-8').isalnum() or vendor == "玥涵"
+    return vendor.encode('UTF-8').isalnum()
 
 
 def is_hk(vendor: str):
@@ -20,11 +21,11 @@ def is_hk(vendor: str):
 
 
 def dollar_to_rmb(dollar: float):
-    return dollar * 6.9 * 1.16 * 1.1 + 200
+    return dollar * 7 * 1.13 * 1.1 + 200
 
 
 def dollar_to_hk(dollar: float):
-    return dollar * 6.9 * 1.16 * 1.1 + 100
+    return dollar * 7 * 1.13 * 1.1 + 100
 
 
 def last_row(ws):
@@ -39,7 +40,7 @@ def get_sub(a_dir):
 
 
 def get_xls_file(a_dir):
-    return glob.glob(sample + "\\" + a_dir + "\\*.xlsx")[0]
+    return glob.glob(base + "\\" + sample + "\\" + a_dir + "\\*.xlsx")[0]
 
 
 header = ['序号', '产品名称', '型号规格', '规范', '单位', '数量', '品牌', '单价', '总价', '交货周期', '采购依据', '申请部门', '项目', 'MOQ']
@@ -50,7 +51,7 @@ assert len(shared_header) + len(individual_header) == len(header) - 1
 
 def get_price(file: str, vendor: str):
     wb = load_workbook(filename=file, data_only=True)
-    ws = wb['Sheet1']
+    ws = wb['询价单']
     row = last_row(ws)
 
     # Read the cell values into a list of lists
@@ -69,7 +70,7 @@ def get_price(file: str, vendor: str):
     return df
 
 
-dirs = get_sub(sample)
+dirs = get_sub(base + "\\" + sample)
 vendors = [s.split()[0] for s in dirs]
 files = [get_xls_file(a_dir) for a_dir in dirs]
 dfs = [get_price(file, vendor) for (file, vendor) in zip(files, vendors)]
@@ -79,9 +80,9 @@ hehe = all.unstack(level=0)
 res = hehe.xs(vendors[0], level=1, axis=1)[shared_header]
 
 res3 = hehe[individual_header]
-res3.to_excel("individual.xlsx")
+res3.to_excel(base + "\\" + "individual.xlsx")
 
-res1 = hehe['总价']
+res1 = hehe['总价'].astype('float64')
 dollar_vendors = list(filter(is_dollar, vendors))
 
 for vendor in vendors:
@@ -110,4 +111,4 @@ res1 = res1.join(std)
 res1 = res1.join(count)
 
 res2 = pd.concat([res, res1], axis=1)
-res2.to_excel("quotes.xlsx")
+res2.to_excel(base + "\\" + "quotes.xlsx")

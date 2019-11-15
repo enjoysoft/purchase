@@ -8,6 +8,7 @@ from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from num2words import num2words
 from rmb_upper import num2chn
+from shutil import copyfile
 
 selection_label: str = '供应商'
 quote_label: str = '总价'
@@ -15,17 +16,20 @@ index_label: str = '序号'
 formatting: str = '%.2f'
 unit_label: str = '单价'
 no_quote: str = '无法报价'
+base = "data"
 excel_filename: str = 'bay.xlsx'
 contract: str = '???'
 
-seed_order: int = 120
-seed_contract: int = 33
+seed_order: int = 180
+seed_contract: int = 80
 pattern = {'BN': 'BN-2019-', 'C919': 'C919B-BN19', 'ARJ': 'ARJ21B-BN19', 'PB': 'PB-BN19', 'QB': 'QB-BN19'}
 
-today: str = '2019年6月17日'
-order: str = '0603-0611美标件'
-start_day: str = '2019年6月3日'
-end_day: str = '2019年6月11日'
+today: str = '2019年11月13日'
+order: str = '1101-1108美标件'
+start_day: str = '2019年11月1日'
+end_day: str = '2019年11月8日'
+start_day2: str = '2019年11月1日'
+end_day2: str = '2019年11月8日'
 
 
 def get_contract(cat: str):
@@ -39,12 +43,15 @@ def get_contract(cat: str):
 
 
 def is_dollar(vname: str):
-    return vname.encode('UTF-8').isalnum() or vname == "玥涵"
+    return vname.encode('UTF-8').isalnum()
 
 
-df: pd.DataFrame = pd.read_excel(excel_filename, sheet_name='quote', na_values=no_quote, index_col=0)
-individual: pd.DataFrame = pd.read_excel("individual.xlsx", index_col=0, header=[0, 1])
-vendors_raw: pd.Series = pd.read_excel(excel_filename, sheet_name='vendor', header=None, index_col=0, squeeze=True)
+# python copy files
+copyfile(excel_filename, base + "\\" + excel_filename)
+df: pd.DataFrame = pd.read_excel(base + "\\" + excel_filename, sheet_name='quote', na_values=no_quote, index_col=0)
+individual: pd.DataFrame = pd.read_excel(base + "\\" + "individual.xlsx", index_col=0, header=[0, 1])
+vendors_raw: pd.Series = pd.read_excel(base + "\\" + excel_filename, sheet_name='vendor', header=None, index_col=0,
+                                       squeeze=True)
 vendor_item_count = len(df)
 
 vendors_name = vendors_raw.index
@@ -84,14 +91,14 @@ df_raw = pd.concat([raw_selection_quotes, selection], axis=1)
 raw_group = df_raw.groupby(selection_label)
 raw_group_summary = pd.concat([raw_group.count(), raw_group.sum()], axis=1)
 raw_group_summary.columns = [2, 3]
-quote_summary = quote_summary.join(raw_group_summary)
+quote_summary = quote_summary.join(raw_group_summary).fillna(0)
 detail: io.StringIO = io.StringIO()
 for vendor, row in quote_summary.iterrows():
     if is_dollar(vendor):
-        print("%s报价%d项，金额总计美元%.2f元，中标%d项，中标总金额$%.2f" % (
+        print("%s报价%d项，金额总计美元%.2f元，中标%d项，中标总金额美元%.2f元" % (
             vendors_raw[vendor], row.loc[1], row.loc[0], row.loc[2], row.loc[3]), sep='', file=detail)
     else:
-        print("%s报价%d项，金额总计人民币%.2f元，中标%d项，中标总金额￥%.2f" % (
+        print("%s报价%d项，金额总计人民币%.2f元，中标%d项，中标总金额人民币%.2f元" % (
             vendors_raw[vendor], row.loc[1], row.loc[0], row.loc[2], row.loc[3]), sep='', file=detail)
 for v in vendors_timeout:
     print(vendors_raw[v], '逾期未回复', sep='', file=detail)
@@ -101,8 +108,8 @@ detail.close()
 vendor_all = len(vendors_raw)
 vendor_count = len(quotes.columns[~quotes.isna().all()])
 
-book = load_workbook(excel_filename)
-excel_writer = pd.ExcelWriter(excel_filename, engine='openpyxl')
+book = load_workbook(base + "\\" + excel_filename)
+excel_writer = pd.ExcelWriter(base + "\\" + excel_filename, engine='openpyxl')
 excel_writer.book = book
 excel_writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
 
@@ -173,12 +180,14 @@ for vendor_name, vendor_df in groups:
                'order': order,
                'start_day': start_day,
                'end_day': end_day,
+               'start_day2': start_day,
+               'end_day2': end_day,
                'today': today,
                'hit': hit,
                'vendor_item_count': vendor_item_count,
                }
     doc.render(context)
-    doc.save(vendor_name + ".docx")
+    doc.save(base + "\\" + vendor_name + ".docx")
 
     # Excel publish
     sheet_name = '订单 ' + vendor_name
